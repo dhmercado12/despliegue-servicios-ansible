@@ -1,0 +1,11 @@
+---
+- name: Desplegar servicios de Task 3
+  hosts: servidores
+  become: true
+
+  roles:
+    - apache_php
+    - phpmyadmin
+    - mariadb
+    - samba
+    - ftp

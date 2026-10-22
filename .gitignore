@@ -1,0 +1,20 @@
+# Secretos y credenciales
+vault-password
+vault-password.txt
+.vault-pass
+*.pem
+*.key
+
+# Archivos temporales
+*.retry
+*.log
+__pycache__/
+*.pyc
+
+# Variables locales sin cifrar
+group_vars/servidores/vars.yml
+
+# Archivos de otra práctica
+probar_postgresql.yml
+roles/postgresql/
+probar_mariadb.yml

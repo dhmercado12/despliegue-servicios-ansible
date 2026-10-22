@@ -1,0 +1,20 @@
+---
+- name: Instalar servidor FTP
+  community.general.zypper:
+    name: vsftpd
+    state: present
+
+- name: Instalar configuración de vsftpd
+  ansible.builtin.template:
+    src: vsftpd.conf.j2
+    dest: /etc/vsftpd.conf
+    owner: root
+    group: root
+    mode: '0600'
+  notify: Reiniciar FTP
+
+- name: Habilitar e iniciar FTP
+  ansible.builtin.service:
+    name: vsftpd
+    state: started
+    enabled: true
