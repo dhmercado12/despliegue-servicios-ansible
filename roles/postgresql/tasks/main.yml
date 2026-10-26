@@ -1,0 +1,121 @@
+---
+- name: Instalar PostgreSQL, PHP y dependencias
+  community.general.zypper:
+    name:
+      - postgresql-server
+      - postgresql
+      - php8-pgsql
+      - python3-psycopg2
+      - openssl
+    state: present
+
+- name: Crear directorio de datos de PostgreSQL
+  ansible.builtin.file:
+    path: "{{ postgresql_data_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0700"
+
+- name: Inicializar PostgreSQL si no existe el clúster
+  ansible.builtin.command:
+    argv:
+      - initdb
+      - -D
+      - "{{ postgresql_data_dir }}"
+  become_user: postgres
+  args:
+    creates: "{{ postgresql_data_dir }}/PG_VERSION"
+
+- name: Generar certificado TLS autofirmado
+  ansible.builtin.command:
+    argv:
+      - openssl
+      - req
+      - -new
+      - -x509
+      - -days
+      - "3650"
+      - -nodes
+      - -text
+      - -out
+      - "{{ postgresql_data_dir }}/server.crt"
+      - -keyout
+      - "{{ postgresql_data_dir }}/server.key"
+      - -subj
+      - "/CN=192.168.11.133"
+  become_user: postgres
+  args:
+    creates: "{{ postgresql_data_dir }}/server.crt"
+  when: postgresql_enable_tls | bool
+
+- name: Proteger la clave privada TLS
+  ansible.builtin.file:
+    path: "{{ postgresql_data_dir }}/server.key"
+    owner: postgres
+    group: postgres
+    mode: "0600"
+  when: postgresql_enable_tls | bool
+
+- name: Configurar PostgreSQL
+  ansible.builtin.lineinfile:
+    path: "{{ postgresql_data_dir }}/postgresql.conf"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - regexp: "^#?listen_addresses\\s*="
+      line: "listen_addresses = '{{ postgresql_listen_addresses }}'"
+    - regexp: "^#?port\\s*="
+      line: "port = {{ postgresql_port }}"
+    - regexp: "^#?password_encryption\\s*="
+      line: "password_encryption = 'scram-sha-256'"
+    - regexp: "^#?ssl\\s*="
+      line: "ssl = {{ 'on' if postgresql_enable_tls else 'off' }}"
+    - regexp: "^#?ssl_cert_file\\s*="
+      line: "ssl_cert_file = '{{ postgresql_data_dir }}/server.crt'"
+    - regexp: "^#?ssl_key_file\\s*="
+      line: "ssl_key_file = '{{ postgresql_data_dir }}/server.key'"
+  notify: Reiniciar PostgreSQL
+
+- name: Permitir conexiones remotas cifradas desde la red del laboratorio
+  ansible.builtin.blockinfile:
+    path: "{{ postgresql_data_dir }}/pg_hba.conf"
+    marker: "# {mark} ANSIBLE RED LABORATORIO"
+    block: |
+      hostssl all all {{ postgresql_network }} scram-sha-256
+  when: postgresql_enable_tls | bool
+  notify: Reiniciar PostgreSQL
+
+- name: Permitir conexiones remotas con SCRAM si TLS está desactivado
+  ansible.builtin.blockinfile:
+    path: "{{ postgresql_data_dir }}/pg_hba.conf"
+    marker: "# {mark} ANSIBLE RED LABORATORIO"
+    block: |
+      host all all {{ postgresql_network }} scram-sha-256
+  when: not (postgresql_enable_tls | bool)
+  notify: Reiniciar PostgreSQL
+
+- name: Habilitar e iniciar PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: Aplicar cambios de configuración
+  ansible.builtin.meta: flush_handlers
+
+- name: Crear usuario de PostgreSQL
+  community.postgresql.postgresql_user:
+    name: "{{ postgresql_user }}"
+    password: "{{ postgresql_app_password }}"
+    role_attr_flags: LOGIN
+    state: present
+  become_user: postgres
+  no_log: true
+
+- name: Crear base de datos
+  community.postgresql.postgresql_db:
+    name: "{{ postgresql_database }}"
+    owner: "{{ postgresql_user }}"
+    state: present
+  become_user: postgres

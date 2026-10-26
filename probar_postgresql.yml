@@ -1,0 +1,7 @@
+---
+- name: Probar instalacion de PostgreSQL
+  hosts: servidores
+  become: true
+
+  roles:
+    - postgresql

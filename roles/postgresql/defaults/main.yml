@@ -1,0 +1,8 @@
+---
+postgresql_database: appdb
+postgresql_user: appuser
+postgresql_port: 5432
+postgresql_listen_addresses: "*"
+postgresql_network: "192.168.11.0/24"
+postgresql_data_dir: /var/lib/pgsql/data
+postgresql_enable_tls: true
