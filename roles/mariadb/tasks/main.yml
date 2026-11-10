@@ -13,3 +13,37 @@
     state: started
     enabled: true
   become: true
+
+- name: Instalar dependencia para administrar MariaDB
+  community.general.zypper:
+    name: python3-PyMySQL
+    state: present
+  become: true
+
+- name: Crear base de datos
+  community.mysql.mysql_db:
+    name: empresa
+    state: present
+    login_unix_socket: /run/mysql/mysql.sock
+  become: true
+
+- name: Crear usuario de base de datos
+  community.mysql.mysql_user:
+    name: estudiante
+    password: "{{ mariadb_password }}"
+    host: localhost
+    priv: 'empresa.*:ALL'
+    state: present
+    login_unix_socket: /run/mysql/mysql.sock
+  become: true
+
+- name: Comprobar que MariaDB este activo
+  ansible.builtin.command:
+    cmd: systemctl is-active mariadb
+  register: mariadb_estado
+  changed_when: false
+  become: true
+
+- name: Mostrar estado de MariaDB
+  ansible.builtin.debug:
+    msg: "MariaDB esta {{ mariadb_estado.stdout }}"

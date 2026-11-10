@@ -119,3 +119,11 @@
     owner: "{{ postgresql_user }}"
     state: present
   become_user: postgres
+
+- name: Crear directorio de backups
+  ansible.builtin.file:
+    path: /var/backups/postgresql
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0700'

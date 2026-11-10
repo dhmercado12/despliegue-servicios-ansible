@@ -12,3 +12,34 @@
     name: apache2
     state: started
     enabled: true
+
+- name: Crear directorio del sitio web
+  ansible.builtin.file:
+    path: /srv/www/htdocs/mi_sitio
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Crear página principal
+  ansible.builtin.copy:
+    dest: /srv/www/htdocs/mi_sitio/index.html
+    content: |
+      <html>
+      <head>
+        <title>Servidor Apache</title>
+      </head>
+      <body>
+        <h1>Apache instalado correctamente</h1>
+        <p>Servidor configurado mediante Ansible.</p>
+      </body>
+      </html>
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Verificar estado de Apache
+  ansible.builtin.command:
+    cmd: systemctl is-active apache2
+  register: apache_estado
+  changed_when: false

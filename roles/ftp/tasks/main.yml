@@ -18,3 +18,43 @@
     name: vsftpd
     state: started
     enabled: true
+
+- name: Crear grupo para usuarios FTP
+  ansible.builtin.group:
+    name: ftpusers
+    state: present
+
+- name: Crear usuario FTP
+  ansible.builtin.user:
+    name: ftpuser
+    group: ftpusers
+    home: /srv/ftp/ftpuser
+    shell: /usr/sbin/nologin
+    create_home: true
+    state: present
+
+- name: Crear directorio de archivos FTP
+  ansible.builtin.file:
+    path: /srv/ftp/ftpuser/archivos
+    state: directory
+    owner: ftpuser
+    group: ftpusers
+    mode: '0755'
+
+- name: Crear archivo de bienvenida FTP
+  ansible.builtin.copy:
+    dest: /srv/ftp/ftpuser/archivos/bienvenida.txt
+    content: "Bienvenido al servidor FTP configurado con Ansible."
+    owner: ftpuser
+    group: ftpusers
+    mode: '0644'
+
+- name: Verificar que FTP este activo
+  ansible.builtin.command:
+    cmd: systemctl is-active vsftpd
+  register: ftp_estado
+  changed_when: false
+
+- name: Mostrar estado de FTP
+  ansible.builtin.debug:
+    msg: "El servidor FTP esta {{ ftp_estado.stdout }}"

@@ -55,3 +55,30 @@
     name: smb
     state: started
     enabled: true
+
+- name: Consultar recursos compartidos de Samba
+  ansible.builtin.command:
+    cmd: smbclient -L localhost -U%
+  register: samba_shares
+  changed_when: false
+
+- name: Mostrar recursos compartidos
+  ansible.builtin.debug:
+    var: samba_shares.stdout_lines
+
+- name: Consultar permisos del directorio compartido
+  ansible.builtin.stat:
+    path: /srv/samba/compartido
+  register: samba_directory
+
+- name: Mostrar permisos del directorio
+  ansible.builtin.debug:
+    msg: "Permisos: {{ samba_directory.stat.mode }}"
+
+- name: Crear archivo de prueba en el recurso compartido
+  ansible.builtin.copy:
+    dest: /srv/samba/compartido/prueba.txt
+    content: "Recurso compartido configurado correctamente mediante Ansible."
+    owner: sambauser
+    group: sambashare
+    mode: '0777'
