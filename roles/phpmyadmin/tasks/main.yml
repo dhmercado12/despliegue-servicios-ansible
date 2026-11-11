@@ -16,7 +16,7 @@
 - name: Instalar extensiones PHP necesarias
   community.general.zypper:
     name:
-      - php8-mysqli
+      - php8-mysql
       - php8-mbstring
       - php8-gd
       - php8-zip
@@ -29,16 +29,3 @@
     state: started
     enabled: true
   become: true
-
-- name: Verificar respuesta HTTP de phpMyAdmin
-  ansible.builtin.uri:
-    url: http://localhost/phpMyAdmin
-    method: GET
-    status_code: 200
-  register: phpmyadmin_http
-  become: true
-
-- name: Mostrar resultado de phpMyAdmin
-  ansible.builtin.debug:
-    msg: "phpMyAdmin responde correctamente por HTTP"
-  when: phpmyadmin_http.status == 200
