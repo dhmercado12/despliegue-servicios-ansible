@@ -20,6 +20,17 @@
     state: present
   become: true
 
+- name: Crear usuario administrador de MariaDB
+  community.mysql.mysql_user:
+    name: admin
+    host: localhost
+    password: "mundolibre"
+    priv: "*.*:ALL,GRANT"
+    login_unix_socket: /run/mysql/mysql.sock
+    state: present
+  become: true
+  no_log: true
+  
 - name: Crear base de datos
   community.mysql.mysql_db:
     name: empresa
