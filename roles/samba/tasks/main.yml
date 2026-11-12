@@ -11,7 +11,7 @@
     name: sambashare
     state: present
 
-- name: Crear usuario del sistema
+- name: Crear usuario del sistema para Samba
   ansible.builtin.user:
     name: sambauser
     group: sambashare
@@ -19,19 +19,17 @@
     create_home: false
     state: present
 
-- name: Crear usuario de Samba si no existe
+- name: Crear o actualizar usuario de Samba
   ansible.builtin.shell: |
     if pdbedit -L | cut -d: -f1 | grep -qx sambauser; then
-      echo PRESENT
+      printf '%s\n%s\n' "$SMB_PASSWORD" "$SMB_PASSWORD" | smbpasswd -s sambauser
     else
-      printf '%s\n%s\n' "$SMB_PASSWORD" "$SMB_PASSWORD" | smbpasswd -s -a sambauser && echo CREATED
+      printf '%s\n%s\n' "$SMB_PASSWORD" "$SMB_PASSWORD" | smbpasswd -s -a sambauser
     fi
   environment:
     SMB_PASSWORD: "{{ vault_samba_password }}"
-  register: samba_user_result
-  changed_when: "'CREATED' in samba_user_result.stdout"
+  changed_when: true
   no_log: true
-
 
 - name: Crear directorio compartido
   ansible.builtin.file:

@@ -24,14 +24,23 @@
     name: ftpusers
     state: present
 
+- name: Permitir nologin como shell válido para FTP
+  ansible.builtin.lineinfile:
+    path: /etc/shells
+    line: /usr/sbin/nologin
+    state: present
+
 - name: Crear usuario FTP
   ansible.builtin.user:
     name: ftpuser
     group: ftpusers
     home: /srv/ftp/ftpuser
     shell: /usr/sbin/nologin
+    password: "{{ ftp_password | password_hash('sha512') }}"
+    update_password: always
     create_home: true
     state: present
+  no_log: true
 
 - name: Crear directorio de archivos FTP
   ansible.builtin.file:
@@ -40,7 +49,6 @@
     owner: ftpuser
     group: ftpusers
     mode: '0755'
-
 - name: Crear archivo de bienvenida FTP
   ansible.builtin.copy:
     dest: /srv/ftp/ftpuser/archivos/bienvenida.txt
